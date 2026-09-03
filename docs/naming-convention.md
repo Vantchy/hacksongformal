@@ -18,6 +18,7 @@
 | 衣柜交互 | `js/wardrobe.js` | 成员B |
 | 换装交互 | `js/dress-up.js` | 成员B |
 | 收藏交互 | `js/collection.js` | 成员B |
+| 卡通化逻辑 | `js/cartoonizer.js` | 成员C |
 | 卡通衣物素材 | `assets/clothes/` | 成员C统筹 |
 | 卡通模特素材 | `assets/model/` | 成员C统筹 |
 
@@ -122,6 +123,21 @@
 | `.empty-state` | 空状态提示容器 |
 | `.empty-state p` | 空状态提示文字 |
 
+### 2.9 拍照上传类
+
+| 类名 | 用途 |
+|------|------|
+| `.photo-upload-group` | 拍照上传表单组（跨列） |
+| `.photo-upload-area` | 拍照上传区域容器 |
+| `.photo-upload-buttons` | 拍照/上传按钮组 |
+| `.photo-preview-area` | 卡通化预览区域（紫色背景） |
+| `.photo-preview-container` | 预览内容容器 |
+| `.photo-preview-container canvas` | 预览画布 |
+| `.photo-preview-actions` | 确认/取消按钮组 |
+| `.staging-hint` | 暂存区提示文字 |
+| `.staging-actions` | 暂存区按钮组 |
+| `#staging-canvas` | 暂存画布（十字光标） |
+
 ---
 
 ## 三、HTML ID
@@ -157,6 +173,22 @@
 | `cancel-edit` | `<button>` | 取消编辑按钮 |
 | `wardrobe-list` | `<div>` | 衣柜卡片列表容器 |
 | `empty-wardrobe` | `<div>` | 衣柜空状态提示 |
+| `open-camera-btn` | `<button>` | 打开摄像头拍照按钮 |
+| `upload-photo-btn` | `<button>` | 上传图片按钮 |
+| `photo-file-input` | `<input file>` | 文件选择器（隐藏） |
+| `camera-preview` | `<video>` | 摄像头实时预览（隐藏） |
+| `photo-staging-area` | `<div>` | 第一步：暂存区（原始照片 → 裁剪/抠图/描边） |
+| `staging-canvas` | `<canvas>` | 暂存区画布（支持裁剪和描边） |
+| `outline-btn` | `<button>` | 画笔描边模式开关 |
+| `staging-hint` | `<p>` | 暂存区操作提示文字 |
+| `auto-bg-remove-btn` | `<button>` | 自动抠图（方案二） |
+| `start-crop-btn` | `<button>` | 裁剪模式开关（方案一） |
+| `go-cartoon-btn` | `<button>` | 下一步 → 卡通化 |
+| `cancel-staging-btn` | `<button>` | 取消暂存区 |
+| `photo-cartoon-area` | `<div>` | 第二步：卡通化结果预览区 |
+| `photo-preview-canvas` | `<canvas>` | 卡通化结果展示画布 |
+| `confirm-cartoon-btn` | `<button>` | 确认使用卡通化图片 |
+| `cancel-cartoon-btn` | `<button>` | 取消卡通化预览 |
 
 ### 3.3 换装页面（dress-up.html）
 
@@ -229,7 +261,24 @@
 | `getMaterialLabel(material)` | 成员B | 材质中文映射 |
 | `getStarsString(rating)` | 成员B | 评分转星星 |
 
-### 4.3 交互层（成员B）— 仅内部使用
+### 4.3 cartoonizer.js（成员C）
+
+| 函数名 | 调用方 | 说明 |
+|--------|--------|------|
+| `openCamera()` | 成员B | 打开摄像头，返回视频流 |
+| `captureFromCamera(video)` | 成员B | 从摄像头截取当前帧为 Canvas |
+| `loadImageToCanvas(file)` | 成员B | 从文件读取图片到 Canvas |
+| `cartoonizeImage(sourceCanvas)` | 成员B | 核心卡通化算法（颜色量化+中值模糊+边缘检测+叠加） |
+| `captureAndCartoonize(file)` | 成员B | 拍照/上传 → 卡通化 → 返回 dataURL（完整流程） |
+| `canvasToDataURL(canvas)` | 成员B | Canvas 转 dataURL |
+| `createImageFromDataURL(dataURL)` | 成员B | dataURL 转图片元素 |
+| `getDominantCornerColor(canvas)` | 成员B | 从四角采样识别背景主色 |
+| `removeBackground(canvas, options)` | 成员B | 移除纯色背景（颜色容差法） |
+| `autoRemoveBackground(canvas)` | 成员B | 一键背景移除 |
+| `cropCanvasRegion(canvas, x, y, w, h)` | 成员B | 裁剪 Canvas 指定区域 |
+| `extractByOutline(canvas, points)` | 成员B | 根据画笔描边轮廓提取衣物（蒙版掩码法） |
+
+### 4.4 交互层（成员B）— 仅内部使用
 
 > 以下函数名成员B使用，成员A/C 不引用
 

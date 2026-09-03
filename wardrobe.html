@@ -108,6 +108,45 @@
           </div>
           <input type="hidden" id="clothes-img" value="">
         </div>
+
+        <!-- 拍照上传（自动卡通化） -->
+        <div class="form-group photo-upload-group">
+          <label>📸 拍照 / 上传（自动卡通化）</label>
+          <div class="photo-upload-area">
+            <div class="photo-upload-buttons">
+              <button type="button" class="btn btn-secondary" id="open-camera-btn">📷 拍照</button>
+              <button type="button" class="btn btn-secondary" id="upload-photo-btn">🖼️ 上传图片</button>
+            </div>
+            <input type="file" id="photo-file-input" accept="image/*" style="display:none">
+            <video id="camera-preview" style="display:none" autoplay playsinline></video>
+
+            <!-- 第一步：原始照片 → 裁剪 / 抠图 / 描边 -->
+            <div id="photo-staging-area" class="photo-preview-area" style="display:none">
+              <div class="photo-preview-container">
+                <p class="staging-hint" id="staging-hint">📐 选择一种方式提取衣服：裁剪、抠图，或描边</p>
+                <canvas id="staging-canvas"></canvas>
+                <div class="staging-actions">
+                  <button type="button" class="btn btn-secondary" id="outline-btn">✏️ 画笔描边</button>
+                  <button type="button" class="btn btn-secondary" id="auto-bg-remove-btn">✨ 自动抠图</button>
+                  <button type="button" class="btn btn-secondary" id="start-crop-btn">✂️ 裁剪</button>
+                  <button type="button" class="btn btn-primary" id="go-cartoon-btn" style="display:none">🎨 下一步 → 卡通化</button>
+                  <button type="button" class="btn btn-secondary" id="cancel-staging-btn">❌ 取消</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 第二步：卡通化结果预览 -->
+            <div id="photo-cartoon-area" class="photo-preview-area" style="display:none">
+              <div class="photo-preview-container">
+                <canvas id="photo-preview-canvas"></canvas>
+                <div class="photo-preview-actions">
+                  <button type="button" class="btn btn-primary" id="confirm-cartoon-btn">✅ 确认使用</button>
+                  <button type="button" class="btn btn-secondary" id="cancel-cartoon-btn">❌ 取消</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="form-actions">
           <button type="submit" class="btn btn-primary">保存衣物</button>
           <button type="button" class="btn btn-secondary" id="cancel-edit" style="display:none">取消编辑</button>
@@ -133,6 +172,7 @@
   <!-- 加载顺序：数据层 → 逻辑层 → 交互层 -->
   <script src="js/storage.js"></script>
   <script src="js/logic.js"></script>
+  <script src="js/cartoonizer.js"></script>
   <script src="js/wardrobe.js"></script>
 </body>
 </html>
