@@ -108,6 +108,28 @@
           </div>
           <input type="hidden" id="clothes-img" value="">
         </div>
+
+        <!-- 拍照上传（自动卡通化） -->
+        <div class="form-group photo-upload-group">
+          <label>📸 拍照 / 上传（自动卡通化）</label>
+          <div class="photo-upload-area">
+            <div class="photo-upload-buttons">
+              <button type="button" class="btn btn-secondary" id="open-camera-btn">📷 拍照</button>
+              <button type="button" class="btn btn-secondary" id="upload-photo-btn">🖼️ 上传图片</button>
+            </div>
+            <input type="file" id="photo-file-input" accept="image/*" style="display:none">
+            <video id="camera-preview" style="display:none" autoplay playsinline></video>
+            <div id="photo-preview-area" class="photo-preview-area" style="display:none">
+              <div class="photo-preview-container">
+                <canvas id="photo-preview-canvas"></canvas>
+                <div class="photo-preview-actions">
+                  <button type="button" class="btn btn-primary" id="confirm-cartoon-btn">✅ 确认使用</button>
+                  <button type="button" class="btn btn-secondary" id="cancel-photo-btn">❌ 取消</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="form-actions">
           <button type="submit" class="btn btn-primary">保存衣物</button>
           <button type="button" class="btn btn-secondary" id="cancel-edit" style="display:none">取消编辑</button>
@@ -133,6 +155,7 @@
   <!-- 加载顺序：数据层 → 逻辑层 → 交互层 -->
   <script src="js/storage.js"></script>
   <script src="js/logic.js"></script>
+  <script src="js/cartoonizer.js"></script>
   <script src="js/wardrobe.js"></script>
 </body>
 </html>

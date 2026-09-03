@@ -7,11 +7,13 @@
  * 依赖的逻辑层（成员C）：
  *   storage.js  - 数据 CRUD
  *   logic.js    - 预设样衣数据、数据验证、映射工具
+ *   cartoonizer.js - 拍照上传、Canvas 卡通化
  * ============================================================
  * 依赖说明：
- * - PRESET_CLOTHES     来自 logic.js
- * - getClothes() / addClothes() / deleteClothes() / updateClothes() / getClothesById() 来自 storage.js
- * - validateClothesData() / getTypeLabel() / getThicknessLabel() / getMaterialLabel() 来自 logic.js
+ * - PRESET_CLOTHES           来自 logic.js
+ * - getClothes() / addClothes() / ... 来自 storage.js
+ * - validateClothesData() / getTypeLabel() / ... 来自 logic.js
+ * - openCamera() / captureFromCamera() / loadImageToCanvas() / cartoonizeImage() 来自 cartoonizer.js
  */
 
 // ==================== DOM 引用 ====================
@@ -31,6 +33,19 @@ const presetList = document.getElementById('preset-clothes-list');
 const wardrobeList = document.getElementById('wardrobe-list');
 const emptyWardrobe = document.getElementById('empty-wardrobe');
 const cancelEditBtn = document.getElementById('cancel-edit');
+
+// 拍照上传 DOM 引用
+const openCameraBtn = document.getElementById('open-camera-btn');
+const uploadPhotoBtn = document.getElementById('upload-photo-btn');
+const photoFileInput = document.getElementById('photo-file-input');
+const cameraPreview = document.getElementById('camera-preview');
+const photoPreviewArea = document.getElementById('photo-preview-area');
+const photoPreviewCanvas = document.getElementById('photo-preview-canvas');
+const confirmCartoonBtn = document.getElementById('confirm-cartoon-btn');
+const cancelPhotoBtn = document.getElementById('cancel-photo-btn');
+
+// ==================== 摄像头状态 ====================
+let cameraStream = null;
 
 // ==================== 渲染预设样衣 ====================
 function renderPresets() {
@@ -172,6 +187,109 @@ cancelEditBtn.addEventListener('click', () => {
   colorHexInput.value = '#CCCCCC';
   imgInput.value = '';
   document.querySelectorAll('.preset-item').forEach(el => el.classList.remove('active'));
+  closeCamera();
+  hidePhotoPreview();
+});
+
+// ==================== 拍照上传交互 ====================
+
+/**
+ * 关闭摄像头
+ */
+function closeCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+  cameraPreview.style.display = 'none';
+}
+
+/**
+ * 隐藏预览区域
+ */
+function hidePhotoPreview() {
+  photoPreviewArea.style.display = 'none';
+}
+
+/**
+ * 显示卡通化预览
+ */
+function showCartoonPreview(canvas) {
+  const ctx = photoPreviewCanvas.getContext('2d');
+  photoPreviewCanvas.width = canvas.width;
+  photoPreviewCanvas.height = canvas.height;
+  ctx.drawImage(canvas, 0, 0);
+  photoPreviewArea.style.display = 'block';
+}
+
+/**
+ * 打开摄像头
+ */
+openCameraBtn.addEventListener('click', async () => {
+  try {
+    closeCamera();
+    const stream = await openCamera();
+    cameraStream = stream;
+    cameraPreview.srcObject = stream;
+    cameraPreview.style.display = 'block';
+    cameraPreview.play();
+
+    // 2秒后自动拍照
+    setTimeout(() => {
+      if (!cameraStream) return;
+      const canvas = captureFromCamera(cameraPreview);
+      closeCamera();
+      const cartoonCanvas = cartoonizeImage(canvas);
+      showCartoonPreview(cartoonCanvas);
+    }, 2000);
+  } catch (err) {
+    alert('无法打开摄像头：' + err.message + '\n请使用上传图片功能');
+  }
+});
+
+/**
+ * 上传图片
+ */
+uploadPhotoBtn.addEventListener('click', () => {
+  photoFileInput.click();
+});
+
+photoFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    const canvas = await loadImageToCanvas(file);
+    const cartoonCanvas = cartoonizeImage(canvas);
+    showCartoonPreview(cartoonCanvas);
+  } catch (err) {
+    alert('图片处理失败：' + err.message);
+  }
+
+  photoFileInput.value = '';
+});
+
+/**
+ * 确认使用卡通化图片
+ */
+confirmCartoonBtn.addEventListener('click', () => {
+  const dataURL = photoPreviewCanvas.toDataURL('image/png');
+  imgInput.value = dataURL;
+  nameInput.value = nameInput.value.trim() || '我的衣服';
+  hidePhotoPreview();
+  closeCamera();
+
+  // 清空预设样衣选中状态
+  document.querySelectorAll('.preset-item').forEach(el => el.classList.remove('active'));
+  alert('✅ 卡通化完成！请填写其他信息后保存');
+});
+
+/**
+ * 取消拍照/上传
+ */
+cancelPhotoBtn.addEventListener('click', () => {
+  hidePhotoPreview();
+  closeCamera();
 });
 
 // ==================== 初始化 ====================
