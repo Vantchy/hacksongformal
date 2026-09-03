@@ -6,19 +6,19 @@
  * 
  * 依赖的逻辑层（成员C）：
  *   storage.js  - 数据 CRUD
- *   logic.js    - 温度计算、穿搭分析、收藏验证、映射工具
+ *   logic.js    - 温度引擎、穿搭分析、穿搭校验、映射工具
  * ============================================================
  * 依赖说明：
  * - getClothes() / getClothesById() / getClothesByIds() / addOutfit()  来自 storage.js
- * - calcTotalThickness() / analyzeOutfitSuitability() / validateOutfitSave() / getStarsString() 来自 logic.js
+ * - calcWeightedThickness() / analyzeOutfitSuitability() / validateOutfitCombo() / validateOutfitSave() / getTypeLabel() / getThicknessLabel() 来自 logic.js
  */
 
 // ==================== 状态管理 ====================
 const state = {
   currentOutfit: {
-    top: null,    // 内层（上衣）
-    outer: null,  // 外层（外套）
-    bottom: null  // 裤子
+    top: null,    // 内层（上衣）→ 存完整 item 对象
+    outer: null,  // 外层（外套）→ 存完整 item 对象
+    bottom: null  // 裤子 → 存完整 item 对象
   }
 };
 
@@ -56,10 +56,11 @@ function renderClothesSelect() {
     card.className = 'clothes-card';
     card.dataset.id = item.id;
 
-    const isWorn = 
-      state.currentOutfit.top === item.id || 
-      state.currentOutfit.outer === item.id || 
-      state.currentOutfit.bottom === item.id;
+    // 检查是否已穿在身上
+    const isWorn =
+      (state.currentOutfit.top && state.currentOutfit.top.id === item.id) ||
+      (state.currentOutfit.outer && state.currentOutfit.outer.id === item.id) ||
+      (state.currentOutfit.bottom && state.currentOutfit.bottom.id === item.id);
 
     if (isWorn) card.classList.add('selected');
 
@@ -77,14 +78,18 @@ function renderClothesSelect() {
 
 // ==================== 切换衣物 ====================
 function toggleClothes(item) {
-  const { id, type } = item;
-  if (state.currentOutfit[type] === id) {
+  const { type } = item;
+
+  // 如果已穿着，则脱下；否则穿上（同类型替换）
+  if (state.currentOutfit[type] && state.currentOutfit[type].id === item.id) {
     state.currentOutfit[type] = null;
   } else {
-    state.currentOutfit[type] = id;
+    state.currentOutfit[type] = item;
   }
+
   renderModel();
   renderClothesSelect();
+  clearTempResult();
 }
 
 // ==================== 渲染模特 ====================
@@ -93,33 +98,24 @@ function renderModel() {
   modelLayerOuter.innerHTML = '';
 
   if (state.currentOutfit.bottom) {
-    const item = getClothesById(state.currentOutfit.bottom);
-    if (item) {
-      const img = document.createElement('img');
-      img.src = item.imgUrl;
-      img.alt = item.name;
-      modelLayerInner.appendChild(img);
-    }
+    const img = document.createElement('img');
+    img.src = state.currentOutfit.bottom.imgUrl;
+    img.alt = state.currentOutfit.bottom.name;
+    modelLayerInner.appendChild(img);
   }
 
   if (state.currentOutfit.top) {
-    const item = getClothesById(state.currentOutfit.top);
-    if (item) {
-      const img = document.createElement('img');
-      img.src = item.imgUrl;
-      img.alt = item.name;
-      modelLayerInner.appendChild(img);
-    }
+    const img = document.createElement('img');
+    img.src = state.currentOutfit.top.imgUrl;
+    img.alt = state.currentOutfit.top.name;
+    modelLayerInner.appendChild(img);
   }
 
   if (state.currentOutfit.outer) {
-    const item = getClothesById(state.currentOutfit.outer);
-    if (item) {
-      const img = document.createElement('img');
-      img.src = item.imgUrl;
-      img.alt = item.name;
-      modelLayerOuter.appendChild(img);
-    }
+    const img = document.createElement('img');
+    img.src = state.currentOutfit.outer.imgUrl;
+    img.alt = state.currentOutfit.outer.name;
+    modelLayerOuter.appendChild(img);
   }
 }
 
@@ -143,21 +139,21 @@ analyzeTempBtn.addEventListener('click', () => {
     return;
   }
 
-  const wornIds = Object.values(state.currentOutfit).filter(Boolean);
-  if (wornIds.length === 0) {
-    tempResult.innerHTML = '<p style="text-align:center;color:#999">还没有穿任何衣物，先搭配一套吧～</p>';
+  // 先校验穿搭是否合法
+  const comboCheck = validateOutfitCombo(state.currentOutfit);
+  if (!comboCheck.valid) {
+    tempResult.innerHTML = `<p style="text-align:center;color:#e65100">${comboCheck.message}</p>`;
     return;
   }
 
-  // 调用逻辑层（成员C）的温度计算
-  const clothes = getClothesByIds(wornIds);
-  const totalThickness = calcTotalThickness(clothes);
-  const result = analyzeOutfitSuitability(outsideTemp, totalThickness);
+  // 调用逻辑层（成员C）的温度推荐引擎：分层加权计算
+  const effectiveThickness = calcWeightedThickness(state.currentOutfit);
+  const result = analyzeOutfitSuitability(outsideTemp, effectiveThickness);
 
   const adviceClassMap = { thin: 'thin', fit: 'fit', thick: 'thick' };
 
   tempResult.innerHTML = `
-    <p class="temp-suit">当前穿搭厚度：${totalThickness}</p>
+    <p class="temp-suit">有效厚度：${effectiveThickness}</p>
     <p class="temp-range">适宜温度区间：${result.suitableMin}°C ~ ${result.suitableMax}°C</p>
     <p class="temp-advice ${adviceClassMap[result.type]}">${result.advice}</p>
   `;
@@ -175,9 +171,11 @@ starRatingEl.addEventListener('click', (e) => {
   });
 });
 
-// ==================== 保存穿搭 ====================
+// ==================== 保存穿搭（含静态快照） ====================
 saveOutfitBtn.addEventListener('click', () => {
-  const wornIds = Object.values(state.currentOutfit).filter(Boolean);
+  const wornIds = Object.values(state.currentOutfit)
+    .filter(Boolean)
+    .map(item => item.id);
 
   // 调用逻辑层验证
   const validation = validateOutfitSave(wornIds);
@@ -186,10 +184,31 @@ saveOutfitBtn.addEventListener('click', () => {
     return;
   }
 
+  // 计算快照数据（静态保存，历史不随系统改变）
+  const effectiveThickness = calcWeightedThickness(state.currentOutfit);
+  const range = calcSuitableTempRange(effectiveThickness);
+  const clothesNames = Object.values(state.currentOutfit)
+    .filter(Boolean)
+    .map(item => item.name);
+
+  const snapshot = {
+    totalThickness: effectiveThickness,
+    suitableMin: range.min,
+    suitableMax: range.max,
+    advice: `有效厚度 ${effectiveThickness}，适宜 ${range.min}°C~${range.max}°C`,
+    clothesNames: clothesNames
+  };
+
   const name = outfitNameInput.value.trim() || '我的穿搭';
   const rating = parseInt(ratingValue.value) || 0;
 
-  const outfit = addOutfit({ name, clothesIds: wornIds, rating });
+  const outfit = addOutfit({
+    name,
+    clothesIds: wornIds,
+    rating,
+    snapshot
+  });
+
   alert(`✅ 穿搭「${outfit.name}」已保存！`);
   outfitNameInput.value = '';
   ratingValue.value = 0;

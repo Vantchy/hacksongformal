@@ -53,7 +53,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="clothes-thickness">厚度</label>
+          <label for="clothes-thickness">厚度等级</label>
           <select id="clothes-thickness" required>
             <option value="">请选择</option>
             <option value="1">薄 (1)</option>
@@ -62,8 +62,44 @@
           </select>
         </div>
         <div class="form-group">
-          <label for="clothes-color">颜色</label>
+          <label for="clothes-material">材质</label>
+          <select id="clothes-material">
+            <option value="cotton">棉质</option>
+            <option value="wool">羊毛</option>
+            <option value="polyester">聚酯纤维</option>
+            <option value="denim">牛仔</option>
+            <option value="fleece">抓绒</option>
+            <option value="nylon">尼龙</option>
+            <option value="silk">丝绸</option>
+            <option value="linen">亚麻</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="clothes-style">款式</label>
+          <select id="clothes-style">
+            <option value="tshirt">T恤</option>
+            <option value="hoodie">卫衣/毛衣</option>
+            <option value="jacket">夹克</option>
+            <option value="coat">外套/大衣</option>
+            <option value="jeans">长裤</option>
+            <option value="shorts">短裤</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="clothes-sleeve">袖长</label>
+          <select id="clothes-sleeve">
+            <option value="short">短袖</option>
+            <option value="long">长袖</option>
+            <option value="none">无袖</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="clothes-color">颜色名称</label>
           <input type="text" id="clothes-color" placeholder="如：蓝色">
+        </div>
+        <div class="form-group">
+          <label for="clothes-colorhex">颜色色值</label>
+          <input type="color" id="clothes-colorhex" value="#CCCCCC">
         </div>
         <div class="form-group">
           <label>衣物素材</label>

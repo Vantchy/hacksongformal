@@ -39,11 +39,22 @@ function renderTodayOutfit() {
     clothesHtml += `<img src="${item.imgUrl}" alt="${item.name}" onerror="this.style.display='none'">`;
   });
 
+  // 如果有快照数据，展示历史温度分析结果
+  let snapshotHtml = '';
+  if (today.snapshot) {
+    snapshotHtml = `
+      <div class="outfit-snapshot" style="margin-top:8px;font-size:0.8rem;color:#888">
+        📊 ${today.snapshot.advice}
+      </div>
+    `;
+  }
+
   card.innerHTML = `
     <div class="outfit-name">${today.name}</div>
     <div class="outfit-date">${today.date}</div>
     <div class="outfit-clothes">${clothesHtml}</div>
     <div class="outfit-rating" style="color:#ffc107">${getStarsString(today.rating)}</div>
+    ${snapshotHtml}
   `;
 
   todayOutfitDisplay.appendChild(card);
@@ -68,6 +79,16 @@ function renderCollection() {
       clothesHtml += `<img src="${item.imgUrl}" alt="${item.name}" onerror="this.style.display='none'">`;
     });
 
+    // 展示快照信息
+    let snapshotHtml = '';
+    if (outfit.snapshot) {
+      snapshotHtml = `
+        <div class="outfit-snapshot" style="margin-top:4px;font-size:0.75rem;color:#999">
+          ${outfit.snapshot.advice}
+        </div>
+      `;
+    }
+
     const card = document.createElement('div');
     card.className = 'collection-card';
     card.innerHTML = `
@@ -75,6 +96,7 @@ function renderCollection() {
       <div class="outfit-date">${outfit.date}</div>
       <div class="outfit-clothes">${clothesHtml}</div>
       <div class="outfit-rating" style="color:#ffc107">${getStarsString(outfit.rating)}</div>
+      ${snapshotHtml}
       <div class="outfit-actions">
         <button class="btn btn-primary btn-small load-btn" data-id="${outfit.id}">📥 加载穿搭</button>
         <button class="btn btn-danger btn-small delete-btn" data-id="${outfit.id}">🗑️ 删除</button>

@@ -8,11 +8,10 @@
  *   storage.js  - 数据 CRUD
  *   logic.js    - 预设样衣数据、数据验证、映射工具
  * ============================================================
- * 依赖说明：此文件引用了 storage.js 和 logic.js 中的函数/常量
+ * 依赖说明：
  * - PRESET_CLOTHES     来自 logic.js
  * - getClothes() / addClothes() / deleteClothes() / updateClothes() / getClothesById() 来自 storage.js
- * - validateClothesData()  来自 logic.js
- * - getTypeLabel() / getThicknessLabel() 来自 logic.js
+ * - validateClothesData() / getTypeLabel() / getThicknessLabel() / getMaterialLabel() 来自 logic.js
  */
 
 // ==================== DOM 引用 ====================
@@ -22,7 +21,11 @@ const editIdInput = document.getElementById('edit-id');
 const nameInput = document.getElementById('clothes-name');
 const typeSelect = document.getElementById('clothes-type');
 const thicknessSelect = document.getElementById('clothes-thickness');
+const materialSelect = document.getElementById('clothes-material');
+const styleSelect = document.getElementById('clothes-style');
+const sleeveSelect = document.getElementById('clothes-sleeve');
 const colorInput = document.getElementById('clothes-color');
+const colorHexInput = document.getElementById('clothes-colorhex');
 const imgInput = document.getElementById('clothes-img');
 const presetList = document.getElementById('preset-clothes-list');
 const wardrobeList = document.getElementById('wardrobe-list');
@@ -36,14 +39,18 @@ function renderPresets() {
     const div = document.createElement('div');
     div.className = 'preset-item';
     div.dataset.index = index;
-    div.innerHTML = `<img src="${item.imgUrl}" alt="${item.name}" onerror="this.style.display='none';this.parentElement.style.background='#f8bbd0';this.parentElement.textContent='${item.name[0]}'">`;
+    div.innerHTML = `<img src="${item.imgUrl}" alt="${item.name}" onerror="this.style.display='none';this.parentElement.style.background='${item.colorHex}';this.parentElement.textContent='${item.name[0]}'">`;
     div.addEventListener('click', () => {
       document.querySelectorAll('.preset-item').forEach(el => el.classList.remove('active'));
       div.classList.add('active');
       nameInput.value = item.name;
       typeSelect.value = item.type;
       thicknessSelect.value = String(item.thickness);
+      materialSelect.value = item.material;
+      styleSelect.value = item.style;
+      sleeveSelect.value = item.sleeve;
       colorInput.value = item.color;
+      colorHexInput.value = item.colorHex;
       imgInput.value = item.imgUrl;
     });
     presetList.appendChild(div);
@@ -67,7 +74,9 @@ function renderWardrobe() {
       <img class="clothes-img" src="${item.imgUrl}" alt="${item.name}"
         onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\\'padding:40px 0;font-size:2rem\\'>👕</div>'">
       <div class="clothes-name">${item.name}</div>
-      <div class="clothes-tags">${getTypeLabel(item.type)} · ${getThicknessLabel(item.thickness)} · ${item.color}</div>
+      <div class="clothes-tags">
+        ${getTypeLabel(item.type)} · ${getThicknessLabel(item.thickness)} · ${getMaterialLabel(item.material)} · ${item.color}
+      </div>
       <div class="clothes-actions">
         <button class="btn btn-secondary btn-small" data-id="${item.id}">✏️ 编辑</button>
         <button class="btn btn-danger btn-small" data-id="${item.id}">🗑️ 删除</button>
@@ -89,8 +98,12 @@ function editClothes(id) {
   nameInput.value = item.name;
   typeSelect.value = item.type;
   thicknessSelect.value = String(item.thickness);
-  colorInput.value = item.color;
-  imgInput.value = item.imgUrl;
+  materialSelect.value = item.material || 'cotton';
+  styleSelect.value = item.style || 'tshirt';
+  sleeveSelect.value = item.sleeve || 'short';
+  colorInput.value = item.color || '';
+  colorHexInput.value = item.colorHex || '#CCCCCC';
+  imgInput.value = item.imgUrl || '';
   cancelEditBtn.style.display = 'inline-block';
   document.querySelectorAll('.preset-item').forEach(el => {
     const idx = parseInt(el.dataset.index);
@@ -118,7 +131,11 @@ form.addEventListener('submit', (e) => {
     name: nameInput.value.trim(),
     type: typeSelect.value,
     thickness: parseInt(thicknessSelect.value),
+    material: materialSelect.value,
+    style: styleSelect.value,
+    sleeve: sleeveSelect.value,
     color: colorInput.value.trim(),
+    colorHex: colorHexInput.value,
     imgUrl: imgInput.value.trim() || 'assets/clothes/placeholder.png'
   };
 
@@ -140,6 +157,7 @@ form.addEventListener('submit', (e) => {
   }
 
   form.reset();
+  colorHexInput.value = '#CCCCCC';
   imgInput.value = '';
   document.querySelectorAll('.preset-item').forEach(el => el.classList.remove('active'));
   renderWardrobe();
@@ -151,6 +169,7 @@ cancelEditBtn.addEventListener('click', () => {
   editIdInput.value = '';
   cancelEditBtn.style.display = 'none';
   form.reset();
+  colorHexInput.value = '#CCCCCC';
   imgInput.value = '';
   document.querySelectorAll('.preset-item').forEach(el => el.classList.remove('active'));
 });
