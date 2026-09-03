@@ -238,6 +238,69 @@ const result = analyzeOutfitSuitability(20, eff);
 | `getMaterialLabel(material)` | `string` | 材质中文映射 |
 | `getStarsString(rating)` | `string` | 0~5 评分转 ★ 字符串 |
 
+### 3.5 图像处理 API（`cartoonizer.js`）
+
+> 负责人：成员C
+> 纯前端 Canvas 图像处理，不依赖任何外部库。
+
+**3.5.1 拍照/上传**
+
+| 函数 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `openCamera()` | 无 | `Promise<MediaStream>` | 打开摄像头，返回视频流 |
+| `captureFromCamera(video, maxWidth)` | `video: HTMLVideoElement, maxWidth?: number` | `HTMLCanvasElement` | 从摄像头截取当前帧 |
+| `loadImageToCanvas(file)` | `file: File` | `Promise<HTMLCanvasElement>` | 从文件读取图片到 Canvas |
+
+**3.5.2 卡通化处理**
+
+| 函数 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `cartoonizeImage(sourceCanvas)` | `sourceCanvas: HTMLCanvasElement` | `HTMLCanvasElement` | 核心算法：颜色量化 → 中值模糊 → Sobel边缘检测 → 叠加 |
+| `captureAndCartoonize(file)` | `file?: File` | `Promise<string>` | 完整流程：拍照/上传 → 卡通化 → 返回 dataURL |
+
+**3.5.3 背景移除（颜色容差法 — 纯色背景效果最佳）**
+
+| 函数 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `getDominantCornerColor(canvas)` | `canvas: HTMLCanvasElement` | `{ r, g, b }` | 从四角采样识别背景主色 |
+| `removeBackground(canvas, options)` | `canvas, options?: { tolerance?, bgColor? }` | `HTMLCanvasElement` | 移除纯色背景（支持边缘羽化） |
+| `autoRemoveBackground(canvas)` | `canvas: HTMLCanvasElement` | `HTMLCanvasElement` | 一键自动抠图（自动识别背景色） |
+
+**3.5.4 裁剪**
+
+| 函数 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `cropCanvasRegion(canvas, x, y, w, h)` | `canvas, x, y, w, h` | `HTMLCanvasElement` | 裁剪 Canvas 指定矩形区域 |
+
+**3.5.5 画笔描边提取（沿衣服边缘描一圈提取衣物）**
+
+| 函数 | 参数 | 返回值 | 说明 |
+|------|------|--------|------|
+| `extractByOutline(canvas, points, margin?)` | `canvas, points: Array<{x,y}>, margin?: number` | `HTMLCanvasElement` | 根据描边闭合轮廓提取衣物（蒙版掩码法 + 自动裁剪到最小包围盒） |
+
+**`extractByOutline` 实现原理：**
+```
+用户描边点 → 创建全尺寸蒙版（路径内白色填充，路径外黑色）
+          → 蒙版应用到原图（蒙版黑色区域设为透明）
+          → 计算描边包围盒 + 边距 → 裁剪到最小范围
+          → 输出背景透明的衣物图片
+```
+
+**卡通化算法流程：**
+```
+原始图片 → 颜色量化（减少到6级色块）
+         → 中值模糊（平滑细节保留边缘）
+         → Sobel 边缘检测（提取黑色轮廓线）
+         → 边缘叠加到色块图（强度0.7）
+         → 输出卡通化图片
+```
+
+**加载顺序：**
+```
+storage.js → logic.js → cartoonizer.js → (交互层 JS)
+数据层       逻辑层      图像处理层        交互层
+```
+
 ---
 
 ## 四、交互层 → 逻辑层 调用关系
@@ -250,6 +313,12 @@ const result = analyzeOutfitSuitability(20, eff);
 | 点击预设样衣填充表单 | `PRESET_CLOTHES[index]` | 自动填写所有字段 |
 | 提交表单保存衣物 | `validateClothesData()` → `addClothes()` / `updateClothes()` | 先验证再保存 |
 | 渲染衣柜列表 | `getClothes()` → `getTypeLabel()` / `getThicknessLabel()` / `getMaterialLabel()` | 读取数据并渲染 |
+| 打开摄像头拍照 | `openCamera()` → `captureFromCamera()` | 拍照后进入暂存区 |
+| 上传图片文件 | `loadImageToCanvas(file)` | 加载后进入暂存区 |
+| 画笔描边提取 | `extractByOutline(canvas, points)` | 描边闭合后提取衣物 |
+| 自动抠图 | `autoRemoveBackground(canvas)` | 移除纯色背景 |
+| 矩形裁剪 | `cropCanvasRegion(canvas, x, y, w, h)` | 手动框选裁剪 |
+| 卡通化处理 | `cartoonizeImage(canvas)` | 裁剪/抠图/描边后 → 卡通化 |
 
 ### 4.2 换装页面（`dress-up.js` → 成员B）
 
@@ -351,9 +420,11 @@ const outfit = addOutfit({
 
 ### 6.4 加载顺序
 ```
-storage.js → logic.js → (交互层 JS)
-数据层       逻辑层       交互层
+storage.js → logic.js → cartoonizer.js → (交互层 JS)
+数据层       逻辑层      图像处理层        交互层
 ```
+
+> 注意：`cartoonizer.js` 必须在交互层之前加载，因为交互层依赖其图像处理函数。
 
 ---
 
@@ -362,3 +433,4 @@ storage.js → logic.js → (交互层 JS)
 | 版本 | 日期 | 变更内容 |
 |------|------|----------|
 | v1.0 | 2026-09-03 | 初始版本，定义三层架构接口 |
+| v1.1 | 2026-09-03 | 新增 cartoonizer.js 图像处理层：拍照/上传、卡通化、背景移除、裁剪、画笔描边提取 |
