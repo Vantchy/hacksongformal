@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>✨ 虚拟换装 - 电子衣橱</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="nav-bar">
+    <div class="nav-inner">
+      <h1 class="nav-logo">🎀 我的电子衣橱</h1>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">首页</a>
+        <a href="wardrobe.html" class="nav-link">👗 衣柜</a>
+        <a href="dress-up.html" class="nav-link active">✨ 换装</a>
+        <a href="collection.html" class="nav-link">💖 收藏</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容 -->
+  <main class="container">
+    <section class="page-header">
+      <h2>✨ 虚拟换装</h2>
+      <p>选择衣柜中的衣物，在卡通模特身上搭配穿搭！</p>
+    </section>
+
+    <!-- 换装主区域 -->
+    <div class="dressup-layout">
+      <!-- 左侧：卡通模特画布 -->
+      <section class="section-card model-area">
+        <h3>🧑 穿搭模特</h3>
+        <div id="model-canvas" class="model-canvas">
+          <!-- 卡通人体模特由JS渲染 -->
+          <!-- 叠穿图层：内层 → 外层 -->
+          <div id="model-layer-inner" class="model-layer"></div>
+          <div id="model-layer-outer" class="model-layer"></div>
+        </div>
+        <!-- 穿搭操作按钮 -->
+        <div class="model-actions">
+          <button class="btn btn-secondary" id="clear-all-btn">🗑️ 一键清空</button>
+        </div>
+      </section>
+
+      <!-- 右侧：衣柜衣物列表 -->
+      <section class="section-card clothes-select-area">
+        <h3>👔 选择衣物</h3>
+        <div id="clothes-select-list" class="card-container">
+          <!-- JS从衣柜读取并渲染 -->
+        </div>
+        <p id="empty-clothes-hint" class="empty-hint">衣柜为空，请先前往衣柜添加衣物～</p>
+      </section>
+    </div>
+
+    <!-- 温度分析区域 -->
+    <section class="section-card temp-analysis">
+      <h3>🌡️ 穿搭温度分析</h3>
+      <div class="temp-input-row">
+        <label for="outside-temp">当前室外温度 (°C)：</label>
+        <input type="number" id="outside-temp" placeholder="如：25" min="-20" max="50">
+        <button class="btn btn-primary" id="analyze-temp-btn">分析穿搭</button>
+      </div>
+      <div id="temp-result" class="temp-result">
+        <p class="temp-hint">输入温度后点击「分析穿搭」查看结果</p>
+      </div>
+    </section>
+
+    <!-- 收藏当前穿搭 -->
+    <section class="section-card save-outfit-area">
+      <h3>💖 保存穿搭</h3>
+      <div class="save-outfit-row">
+        <input type="text" id="outfit-name" placeholder="为这套穿搭取个名字..." maxlength="20">
+        <div class="star-rating" id="star-rating">
+          <span class="star" data-value="1">☆</span>
+          <span class="star" data-value="2">☆</span>
+          <span class="star" data-value="3">☆</span>
+          <span class="star" data-value="4">☆</span>
+          <span class="star" data-value="5">☆</span>
+        </div>
+        <button class="btn btn-primary" id="save-outfit-btn">💾 保存穿搭</button>
+      </div>
+      <input type="hidden" id="rating-value" value="0">
+    </section>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <p>🎀 电子衣橱 · 比赛Demo版本</p>
+  </footer>
+
+  <script src="js/storage.js"></script>
+  <script src="js/dress-up.js"></script>
+</body>
+</html>

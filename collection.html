@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💖 穿搭收藏 - 电子衣橱</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="nav-bar">
+    <div class="nav-inner">
+      <h1 class="nav-logo">🎀 我的电子衣橱</h1>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">首页</a>
+        <a href="wardrobe.html" class="nav-link">👗 衣柜</a>
+        <a href="dress-up.html" class="nav-link">✨ 换装</a>
+        <a href="collection.html" class="nav-link active">💖 收藏</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容 -->
+  <main class="container">
+    <section class="page-header">
+      <h2>💖 穿搭收藏</h2>
+      <p>查看你保存的所有穿搭方案，一键回顾历史造型。</p>
+    </section>
+
+    <!-- 今日穿搭卡片 -->
+    <section class="section-card today-outfit">
+      <h3>🌟 今日穿搭</h3>
+      <div id="today-outfit-display" class="today-outfit-display">
+        <!-- JS渲染今日穿搭卡片 -->
+      </div>
+      <p id="empty-today" class="empty-hint">今天还没有保存穿搭哦～快去换装页面搭配一套吧！</p>
+    </section>
+
+    <!-- 历史收藏列表 -->
+    <section class="section-card history-list">
+      <h3>📚 历史穿搭收藏</h3>
+      <div id="collection-list" class="card-container">
+        <!-- JS渲染所有收藏穿搭 -->
+      </div>
+      <p id="empty-collection" class="empty-hint">还没有收藏任何穿搭方案～</p>
+    </section>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <p>🎀 电子衣橱 · 比赛Demo版本</p>
+  </footer>
+
+  <script src="js/storage.js"></script>
+  <script src="js/collection.js"></script>
+</body>
+</html>

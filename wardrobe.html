@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>👗 我的衣柜 - 电子衣橱</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- 导航栏 -->
+  <nav class="nav-bar">
+    <div class="nav-inner">
+      <h1 class="nav-logo">🎀 我的电子衣橱</h1>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link">首页</a>
+        <a href="wardrobe.html" class="nav-link active">👗 衣柜</a>
+        <a href="dress-up.html" class="nav-link">✨ 换装</a>
+        <a href="collection.html" class="nav-link">💖 收藏</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容 -->
+  <main class="container">
+    <section class="page-header">
+      <h2>👗 我的衣柜</h2>
+      <p>管理你的所有衣物，数据保存在本地浏览器中。</p>
+    </section>
+
+    <!-- 衣物表单 - 新增 / 编辑 -->
+    <section class="section-card" id="form-section">
+      <h3 id="form-title">✏️ 新增衣物</h3>
+      <form id="clothes-form" class="clothes-form">
+        <input type="hidden" id="edit-id" value="">
+        <div class="form-group">
+          <label for="clothes-name">衣物名称</label>
+          <input type="text" id="clothes-name" placeholder="如：蓝色冲锋衣" required>
+        </div>
+        <div class="form-group">
+          <label for="clothes-type">衣物类型</label>
+          <select id="clothes-type" required>
+            <option value="">请选择</option>
+            <option value="top">上衣</option>
+            <option value="outer">外套</option>
+            <option value="bottom">裤子</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="clothes-thickness">厚度</label>
+          <select id="clothes-thickness" required>
+            <option value="">请选择</option>
+            <option value="1">薄 (1)</option>
+            <option value="2">中等 (2)</option>
+            <option value="3">厚 (3)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="clothes-color">颜色</label>
+          <input type="text" id="clothes-color" placeholder="如：蓝色">
+        </div>
+        <div class="form-group">
+          <label>衣物素材</label>
+          <div id="preset-clothes-list" class="preset-list">
+            <!-- 预设样衣由JS动态渲染 -->
+          </div>
+          <input type="hidden" id="clothes-img" value="">
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">保存衣物</button>
+          <button type="button" class="btn btn-secondary" id="cancel-edit" style="display:none">取消编辑</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 衣柜卡片展示 -->
+    <section class="section-card" id="wardrobe-section">
+      <h3>📋 我的衣物列表</h3>
+      <div id="wardrobe-list" class="card-container">
+        <!-- JS动态渲染 -->
+      </div>
+      <p id="empty-wardrobe" class="empty-hint">衣柜空空如也，快来添加衣物吧～</p>
+    </section>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <p>🎀 电子衣橱 · 比赛Demo版本</p>
+  </footer>
+
+  <script src="js/storage.js"></script>
+  <script src="js/wardrobe.js"></script>
+</body>
+</html>

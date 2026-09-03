@@ -1,0 +1,659 @@
+/* ==================== 全局重置 & 基础 ==================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: linear-gradient(135deg, #fce4ec 0%, #f3e5f5 50%, #e8eaf6 100%);
+  min-height: 100vh;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ==================== 导航栏 ==================== */
+.nav-bar {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-logo {
+  font-size: 1.4rem;
+  color: #e91e63;
+}
+
+.nav-links {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-link {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  color: #555;
+}
+
+.nav-link:hover {
+  background: #fce4ec;
+  color: #e91e63;
+}
+
+.nav-link.active {
+  background: #e91e63;
+  color: #fff;
+}
+
+/* ==================== 容器 ==================== */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px;
+  flex: 1;
+}
+
+/* ==================== 首页 Hero ==================== */
+.hero {
+  text-align: center;
+  padding: 48px 0 32px;
+}
+
+.hero h2 {
+  font-size: 2rem;
+  color: #e91e63;
+  margin-bottom: 12px;
+}
+
+.hero p {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+/* ==================== 卡片网格 ==================== */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+  padding: 16px 0;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(233, 30, 99, 0.15);
+}
+
+.card-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+.card h3 {
+  font-size: 1.25rem;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.card p {
+  font-size: 0.9rem;
+  color: #777;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.card-btn {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 20px;
+  background: #fce4ec;
+  color: #e91e63;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.card:hover .card-btn {
+  background: #e91e63;
+  color: #fff;
+}
+
+/* ==================== 页面头部 ==================== */
+.page-header {
+  text-align: center;
+  padding: 16px 0 24px;
+}
+
+.page-header h2 {
+  font-size: 1.6rem;
+  color: #e91e63;
+}
+
+.page-header p {
+  color: #777;
+  font-size: 0.95rem;
+  margin-top: 6px;
+}
+
+/* ==================== 区块卡片 ==================== */
+.section-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.section-card h3 {
+  font-size: 1.1rem;
+  color: #555;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #fce4ec;
+}
+
+/* ==================== 表单 ==================== */
+.clothes-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 600;
+}
+
+.form-group input,
+.form-group select {
+  padding: 10px 12px;
+  border: 2px solid #eee;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #e91e63;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+/* ==================== 按钮 ==================== */
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 600;
+}
+
+.btn-primary {
+  background: #e91e63;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #d81b60;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #f5f5f5;
+  color: #555;
+}
+
+.btn-secondary:hover {
+  background: #eee;
+}
+
+.btn-danger {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.btn-danger:hover {
+  background: #ffcdd2;
+}
+
+.btn-small {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+}
+
+/* ==================== 卡片容器（衣物卡片等） ==================== */
+.card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.clothes-card {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.clothes-card:hover {
+  border-color: #f8bbd0;
+}
+
+.clothes-card .clothes-img {
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+.clothes-card .clothes-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.clothes-card .clothes-tags {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 4px;
+}
+
+.clothes-card .clothes-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.clothes-card.selected {
+  border-color: #e91e63;
+  background: #fce4ec;
+}
+
+/* ==================== 预设样衣选择 ==================== */
+.preset-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preset-item {
+  width: 64px;
+  height: 64px;
+  border: 2px solid #eee;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+}
+
+.preset-item:hover {
+  border-color: #f8bbd0;
+}
+
+.preset-item.active {
+  border-color: #e91e63;
+  background: #fce4ec;
+}
+
+.preset-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+}
+
+/* ==================== 换装布局 ==================== */
+.dressup-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.model-area {
+  text-align: center;
+}
+
+.model-canvas {
+  position: relative;
+  width: 280px;
+  height: 400px;
+  margin: 0 auto;
+  background: #fafafa;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid #f3e5f5;
+}
+
+.model-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.model-layer img {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+}
+
+.model-actions {
+  margin-top: 16px;
+}
+
+/* ==================== 温度分析 ==================== */
+.temp-input-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.temp-input-row input {
+  width: 100px;
+  padding: 10px 12px;
+  border: 2px solid #eee;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.temp-input-row input:focus {
+  border-color: #e91e63;
+}
+
+.temp-result {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f3e5f5;
+}
+
+.temp-result .temp-hint {
+  color: #999;
+  text-align: center;
+}
+
+.temp-result .temp-suit {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.temp-result .temp-range {
+  color: #e91e63;
+  font-size: 0.95rem;
+  margin-top: 4px;
+}
+
+.temp-result .temp-advice {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.temp-advice.thin {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.temp-advice.fit {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.temp-advice.thick {
+  background: #ffebee;
+  color: #c62828;
+}
+
+/* ==================== 收藏穿搭 ==================== */
+.save-outfit-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.save-outfit-row input {
+  flex: 1;
+  min-width: 140px;
+  padding: 10px 12px;
+  border: 2px solid #eee;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.save-outfit-row input:focus {
+  border-color: #e91e63;
+}
+
+/* ==================== 星级评分 ==================== */
+.star-rating {
+  display: flex;
+  gap: 4px;
+}
+
+.star {
+  font-size: 1.6rem;
+  cursor: pointer;
+  color: #ddd;
+  transition: color 0.15s;
+  user-select: none;
+}
+
+.star.active,
+.star:hover {
+  color: #ffc107;
+}
+
+/* ==================== 今日穿搭卡片 ==================== */
+.today-outfit-display {
+  text-align: center;
+  padding: 16px;
+}
+
+.today-outfit-card {
+  display: inline-block;
+  background: #fce4ec;
+  border-radius: 16px;
+  padding: 20px 32px;
+  box-shadow: 0 4px 12px rgba(233, 30, 99, 0.1);
+}
+
+.today-outfit-card .outfit-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.today-outfit-card .outfit-date {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 4px;
+}
+
+.today-outfit-card .outfit-clothes {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.today-outfit-card .outfit-clothes img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.today-outfit-card .outfit-rating {
+  margin-top: 8px;
+  font-size: 1.2rem;
+}
+
+/* ==================== 收藏列表卡片 ==================== */
+.collection-card {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.collection-card:hover {
+  border-color: #f8bbd0;
+}
+
+.collection-card .outfit-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.collection-card .outfit-date {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 4px;
+}
+
+.collection-card .outfit-clothes {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.collection-card .outfit-clothes img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 6px;
+  padding: 3px;
+}
+
+.collection-card .outfit-rating {
+  margin-top: 6px;
+  font-size: 1rem;
+}
+
+.collection-card .outfit-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* ==================== 空状态提示 ==================== */
+.empty-hint {
+  text-align: center;
+  color: #bbb;
+  font-size: 0.95rem;
+  padding: 24px 0;
+}
+
+/* ==================== 页脚 ==================== */
+.footer {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* ==================== 响应式 ==================== */
+@media (max-width: 768px) {
+  .nav-inner {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .dressup-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .clothes-form {
+    grid-template-columns: 1fr;
+  }
+
+  .hero h2 {
+    font-size: 1.5rem;
+  }
+
+  .model-canvas {
+    width: 220px;
+    height: 320px;
+  }
+}
