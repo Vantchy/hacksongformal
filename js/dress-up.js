@@ -1,17 +1,16 @@
 /**
- * dress-up.js - 虚拟换装模块（后端交互逻辑）
+ * dress-up.js - 虚拟换装模块（交互层）
  * 
- * 后端交互逻辑负责人：成员B
- * 开发任务：卡通模特画布渲染、叠穿交互、温度计算、穿搭保存
+ * 后端交互层负责人：成员B
+ * 职责：DOM 操作、事件绑定、UI 渲染、用户交互反馈
  * 
- * 前端 HTML/CSS 负责人：成员A（页面结构 + UI 样式）
- * 
- * 可用 API（来自 storage.js）：
- *   getClothes()          - 获取所有衣物
- *   getClothesById(id)    - 根据ID获取单件衣物
- *   getClothesByIds(ids)  - 根据ID数组批量获取
- *   addOutfit(obj)        - 保存穿搭收藏
- *   getTodayDate()         - 获取当天日期
+ * 依赖的逻辑层（成员C）：
+ *   storage.js  - 数据 CRUD
+ *   logic.js    - 温度计算、穿搭分析、收藏验证、映射工具
+ * ============================================================
+ * 依赖说明：
+ * - getClothes() / getClothesById() / getClothesByIds() / addOutfit()  来自 storage.js
+ * - calcTotalThickness() / analyzeOutfitSuitability() / validateOutfitSave() / getStarsString() 来自 logic.js
  */
 
 // ==================== 状态管理 ====================
@@ -37,7 +36,7 @@ const tempResult = document.getElementById('temp-result');
 
 // 收藏功能
 const outfitNameInput = document.getElementById('outfit-name');
-const starRating = document.getElementById('star-rating');
+const starRatingEl = document.getElementById('star-rating');
 const ratingValue = document.getElementById('rating-value');
 const saveOutfitBtn = document.getElementById('save-outfit-btn');
 
@@ -52,29 +51,23 @@ function renderClothesSelect() {
   }
   emptyClothesHint.style.display = 'none';
 
-  const typeMap = { top: '上衣', outer: '外套', bottom: '裤子' };
-  const thickMap = { 1: '薄', 2: '中等', 3: '厚' };
-
   clothes.forEach(item => {
     const card = document.createElement('div');
     card.className = 'clothes-card';
     card.dataset.id = item.id;
 
-    // 检查是否已穿在身上
     const isWorn = 
       state.currentOutfit.top === item.id || 
       state.currentOutfit.outer === item.id || 
       state.currentOutfit.bottom === item.id;
 
-    if (isWorn) {
-      card.classList.add('selected');
-    }
+    if (isWorn) card.classList.add('selected');
 
     card.innerHTML = `
       <img class="clothes-img" src="${item.imgUrl}" alt="${item.name}"
         onerror="this.style.display='none';this.parentElement.innerHTML+='<div style=\\'padding:30px 0;font-size:2rem\\'>👕</div>'">
       <div class="clothes-name">${item.name}</div>
-      <div class="clothes-tags">${typeMap[item.type] || item.type} · ${thickMap[item.thickness] || item.thickness}</div>
+      <div class="clothes-tags">${getTypeLabel(item.type)} · ${getThicknessLabel(item.thickness)}</div>
     `;
 
     card.addEventListener('click', () => toggleClothes(item));
@@ -85,15 +78,11 @@ function renderClothesSelect() {
 // ==================== 切换衣物 ====================
 function toggleClothes(item) {
   const { id, type } = item;
-
-  // 如果已穿着，则脱下
   if (state.currentOutfit[type] === id) {
     state.currentOutfit[type] = null;
   } else {
-    // 穿着新衣物（同类型替换）
     state.currentOutfit[type] = id;
   }
-
   renderModel();
   renderClothesSelect();
 }
@@ -103,7 +92,6 @@ function renderModel() {
   modelLayerInner.innerHTML = '';
   modelLayerOuter.innerHTML = '';
 
-  // 裤子（放在内层底部）
   if (state.currentOutfit.bottom) {
     const item = getClothesById(state.currentOutfit.bottom);
     if (item) {
@@ -114,7 +102,6 @@ function renderModel() {
     }
   }
 
-  // 内层上衣
   if (state.currentOutfit.top) {
     const item = getClothesById(state.currentOutfit.top);
     if (item) {
@@ -125,7 +112,6 @@ function renderModel() {
     }
   }
 
-  // 外层外套
   if (state.currentOutfit.outer) {
     const item = getClothesById(state.currentOutfit.outer);
     if (item) {
@@ -152,58 +138,37 @@ function clearTempResult() {
 
 analyzeTempBtn.addEventListener('click', () => {
   const outsideTemp = parseFloat(outsideTempInput.value);
-
   if (isNaN(outsideTemp)) {
     alert('请输入有效的温度值！');
     return;
   }
 
-  // 计算当前穿搭的总厚度
   const wornIds = Object.values(state.currentOutfit).filter(Boolean);
   if (wornIds.length === 0) {
     tempResult.innerHTML = '<p style="text-align:center;color:#999">还没有穿任何衣物，先搭配一套吧～</p>';
     return;
   }
 
+  // 调用逻辑层（成员C）的温度计算
   const clothes = getClothesByIds(wornIds);
-  const totalThickness = clothes.reduce((sum, item) => sum + item.thickness, 0);
+  const totalThickness = calcTotalThickness(clothes);
+  const result = analyzeOutfitSuitability(outsideTemp, totalThickness);
 
-  // 根据厚度计算适宜温度区间
-  // 基础公式：每1厚度约对应 5°C，基础温度 15°C
-  const baseTemp = 15;
-  const baseThickness = 3; // 3件平均厚度作为基准
-  const suitableMin = Math.round(baseTemp - (totalThickness - baseThickness) * 3);
-  const suitableMax = Math.round(baseTemp + (totalThickness - baseThickness) * 3);
-
-  // 判断穿搭建议
-  let advice = '';
-  let adviceClass = '';
-  if (outsideTemp < suitableMin - 3) {
-    advice = '🥶 偏薄了！建议加厚衣物，小心着凉～';
-    adviceClass = 'thin';
-  } else if (outsideTemp > suitableMax + 3) {
-    advice = '🥵 偏厚了！建议减少衣物，避免闷热～';
-    adviceClass = 'thick';
-  } else {
-    advice = '✅ 这套穿搭非常适合当前温度！';
-    adviceClass = 'fit';
-  }
+  const adviceClassMap = { thin: 'thin', fit: 'fit', thick: 'thick' };
 
   tempResult.innerHTML = `
     <p class="temp-suit">当前穿搭厚度：${totalThickness}</p>
-    <p class="temp-range">适宜温度区间：${suitableMin}°C ~ ${suitableMax}°C</p>
-    <p class="temp-advice ${adviceClass}">${advice}</p>
+    <p class="temp-range">适宜温度区间：${result.suitableMin}°C ~ ${result.suitableMax}°C</p>
+    <p class="temp-advice ${adviceClassMap[result.type]}">${result.advice}</p>
   `;
 });
 
 // ==================== 星级评分 ====================
-starRating.addEventListener('click', (e) => {
+starRatingEl.addEventListener('click', (e) => {
   const star = e.target.closest('.star');
   if (!star) return;
-
   const value = parseInt(star.dataset.value);
   ratingValue.value = value;
-
   document.querySelectorAll('.star').forEach((s, i) => {
     s.classList.toggle('active', i < value);
     s.textContent = i < value ? '★' : '☆';
@@ -213,20 +178,18 @@ starRating.addEventListener('click', (e) => {
 // ==================== 保存穿搭 ====================
 saveOutfitBtn.addEventListener('click', () => {
   const wornIds = Object.values(state.currentOutfit).filter(Boolean);
-  if (wornIds.length === 0) {
-    alert('请先搭配一套穿搭再保存！');
+
+  // 调用逻辑层验证
+  const validation = validateOutfitSave(wornIds);
+  if (!validation.valid) {
+    alert(validation.message);
     return;
   }
 
   const name = outfitNameInput.value.trim() || '我的穿搭';
   const rating = parseInt(ratingValue.value) || 0;
 
-  const outfit = addOutfit({
-    name: name,
-    clothesIds: wornIds,
-    rating: rating
-  });
-
+  const outfit = addOutfit({ name, clothesIds: wornIds, rating });
   alert(`✅ 穿搭「${outfit.name}」已保存！`);
   outfitNameInput.value = '';
   ratingValue.value = 0;
