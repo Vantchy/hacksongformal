@@ -53,15 +53,20 @@ const cartoonArea = document.getElementById('photo-cartoon-area');
 const cartoonPreviewCanvas = document.getElementById('photo-preview-canvas');
 const confirmCartoonBtn = document.getElementById('confirm-cartoon-btn');
 const cancelCartoonBtn = document.getElementById('cancel-cartoon-btn');
+const outlineBtn = document.getElementById('outline-btn');
+const stagingHint = document.getElementById('staging-hint');
 
 // ==================== 拍照上传状态 ====================
 let cameraStream = null;
 let rawCanvas = null;        // 原始照片 canvas
-let processedCanvas = null;  // 裁剪/抠图后的 canvas
+let processedCanvas = null;  // 裁剪/抠图/描边后的 canvas
 let isCropMode = false;      // 是否处于裁剪模式
 let cropStart = null;        // 裁剪起点 {x, y}
 let cropEnd = null;          // 裁剪终点 {x, y}
 let hasCropSelection = false;// 是否已框选
+let isOutlineMode = false;   // 是否处于画笔描边模式
+let outlinePoints = [];      // 描边点数组 [{x, y}, ...]
+let isDrawingOutline = false;// 是否正在画描边
 
 // ==================== 渲染预设样衣 ====================
 function renderPresets() {
@@ -228,6 +233,11 @@ function hideAllPhotoPreviews() {
   cropStart = null;
   cropEnd = null;
   hasCropSelection = false;
+  isOutlineMode = false;
+  outlinePoints = [];
+  isDrawingOutline = false;
+  outlineBtn.textContent = '✏️ 画笔描边';
+  stagingHint.textContent = '📐 选择一种方式提取衣服：裁剪、抠图，或描边';
 }
 
 /** 显示暂存区（原始照片） */
@@ -238,8 +248,13 @@ function showStagingArea(canvas) {
   cropStart = null;
   cropEnd = null;
   hasCropSelection = false;
+  isOutlineMode = false;
+  outlinePoints = [];
+  isDrawingOutline = false;
   goCartoonBtn.style.display = 'none';
   startCropBtn.textContent = '✂️ 裁剪';
+  outlineBtn.textContent = '✏️ 画笔描边';
+  stagingHint.textContent = '📐 选择一种方式提取衣服：裁剪、抠图，或描边';
 
   // 绘制原始照片到暂存 canvas
   const ctx = stagingCanvas.getContext('2d');
@@ -262,19 +277,39 @@ function redrawStagingCanvas() {
     const w = Math.abs(cropEnd.x - cropStart.x);
     const h = Math.abs(cropEnd.y - cropStart.y);
 
-    // 半透明遮罩（选区外变暗）
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
     ctx.fillRect(0, 0, stagingCanvas.width, y);
     ctx.fillRect(0, y, x, h);
     ctx.fillRect(x + w, y, stagingCanvas.width - x - w, h);
     ctx.fillRect(0, y + h, stagingCanvas.width, stagingCanvas.height - y - h);
 
-    // 选区边框（白色虚线）
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
     ctx.strokeRect(x, y, w, h);
     ctx.setLineDash([]);
+  }
+
+  // 如果在画笔描边模式，绘制描边轨迹
+  if (isOutlineMode && outlinePoints.length > 0) {
+    ctx.beginPath();
+    ctx.moveTo(outlinePoints[0].x, outlinePoints[0].y);
+    for (let i = 1; i < outlinePoints.length; i++) {
+      ctx.lineTo(outlinePoints[i].x, outlinePoints[i].y);
+    }
+    if (!isDrawingOutline) {
+      ctx.closePath();
+    }
+    ctx.strokeStyle = '#ff1744';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([]);
+    ctx.stroke();
+
+    // 如果已闭合，在内部加半透明高亮
+    if (!isDrawingOutline && outlinePoints.length >= 3) {
+      ctx.fillStyle = 'rgba(255, 23, 68, 0.1)';
+      ctx.fill();
+    }
   }
 }
 
@@ -336,7 +371,6 @@ startCropBtn.addEventListener('click', () => {
   if (!rawCanvas) return;
 
   if (isCropMode) {
-    // 退出裁剪模式
     isCropMode = false;
     cropStart = null;
     cropEnd = null;
@@ -344,11 +378,17 @@ startCropBtn.addEventListener('click', () => {
     startCropBtn.textContent = '✂️ 裁剪';
     processedCanvas = null;
     goCartoonBtn.style.display = 'none';
+    stagingHint.textContent = '📐 选择一种方式提取衣服：裁剪、抠图，或描边';
     redrawStagingCanvas();
     return;
   }
 
-  // 进入裁剪模式
+  // 退出其他模式
+  isOutlineMode = false;
+  outlinePoints = [];
+  isDrawingOutline = false;
+  outlineBtn.textContent = '✏️ 画笔描边';
+
   isCropMode = true;
   cropStart = null;
   cropEnd = null;
@@ -356,43 +396,88 @@ startCropBtn.addEventListener('click', () => {
   processedCanvas = null;
   goCartoonBtn.style.display = 'none';
   startCropBtn.textContent = '❌ 取消裁剪';
+  stagingHint.textContent = '📐 在画布上拖拽框选衣服区域';
   redrawStagingCanvas();
 });
 
-/** 在暂存 canvas 上拖拽选择区域 */
+/** 在暂存 canvas 上交互 */
 stagingCanvas.addEventListener('mousedown', (e) => {
-  if (!isCropMode) return;
   const rect = stagingCanvas.getBoundingClientRect();
   const scaleX = stagingCanvas.width / rect.width;
   const scaleY = stagingCanvas.height / rect.height;
-  cropStart = {
-    x: (e.clientX - rect.left) * scaleX,
-    y: (e.clientY - rect.top) * scaleY
-  };
-  cropEnd = { ...cropStart };
-  hasCropSelection = false;
+
+  if (isOutlineMode) {
+    // 画笔描边：开始画线
+    isDrawingOutline = true;
+    outlinePoints = [];
+    processedCanvas = null;
+    goCartoonBtn.style.display = 'none';
+    const px = Math.max(0, Math.min(stagingCanvas.width, (e.clientX - rect.left) * scaleX));
+    const py = Math.max(0, Math.min(stagingCanvas.height, (e.clientY - rect.top) * scaleY));
+    outlinePoints.push({ x: px, y: py });
+    return;
+  }
+
+  if (isCropMode) {
+    cropStart = {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+    cropEnd = { ...cropStart };
+    hasCropSelection = false;
+  }
 });
 
 stagingCanvas.addEventListener('mousemove', (e) => {
-  if (!isCropMode || !cropStart) return;
   const rect = stagingCanvas.getBoundingClientRect();
   const scaleX = stagingCanvas.width / rect.width;
   const scaleY = stagingCanvas.height / rect.height;
-  cropEnd = {
-    x: Math.max(0, Math.min(stagingCanvas.width, (e.clientX - rect.left) * scaleX)),
-    y: Math.max(0, Math.min(stagingCanvas.height, (e.clientY - rect.top) * scaleY))
-  };
-  redrawStagingCanvas();
+
+  if (isOutlineMode && isDrawingOutline) {
+    const px = Math.max(0, Math.min(stagingCanvas.width, (e.clientX - rect.left) * scaleX));
+    const py = Math.max(0, Math.min(stagingCanvas.height, (e.clientY - rect.top) * scaleY));
+    outlinePoints.push({ x: px, y: py });
+    redrawStagingCanvas();
+    return;
+  }
+
+  if (isCropMode && cropStart) {
+    cropEnd = {
+      x: Math.max(0, Math.min(stagingCanvas.width, (e.clientX - rect.left) * scaleX)),
+      y: Math.max(0, Math.min(stagingCanvas.height, (e.clientY - rect.top) * scaleY))
+    };
+    redrawStagingCanvas();
+  }
 });
 
 stagingCanvas.addEventListener('mouseup', () => {
+  if (isOutlineMode && isDrawingOutline) {
+    isDrawingOutline = false;
+    if (outlinePoints.length < 3) {
+      outlinePoints = [];
+      redrawStagingCanvas();
+      return;
+    }
+    // 闭合路径，提取轮廓内衣物
+    try {
+      processedCanvas = extractByOutline(rawCanvas, outlinePoints);
+      redrawStagingCanvas();
+      goCartoonBtn.style.display = 'inline-block';
+      stagingHint.textContent = '✅ 描边完成！点击「下一步 → 卡通化」';
+    } catch (err) {
+      alert('描边提取失败：' + err.message + '，请重新描边');
+      outlinePoints = [];
+      redrawStagingCanvas();
+    }
+    return;
+  }
+
   if (!isCropMode || !cropStart || !cropEnd) return;
 
   const w = Math.abs(cropEnd.x - cropStart.x);
   const h = Math.abs(cropEnd.y - cropStart.y);
 
   if (w < 10 || h < 10) {
-    // 选得太小，忽略
     cropStart = null;
     cropEnd = null;
     redrawStagingCanvas();
@@ -400,12 +485,48 @@ stagingCanvas.addEventListener('mouseup', () => {
   }
 
   hasCropSelection = true;
-  // 自动应用裁剪
   const x = Math.min(cropStart.x, cropEnd.x);
   const y = Math.min(cropStart.y, cropEnd.y);
   processedCanvas = cropCanvasRegion(rawCanvas, x, y, w, h);
   redrawStagingCanvas();
   goCartoonBtn.style.display = 'inline-block';
+});
+
+// ==================== 画笔描边交互 ====================
+
+/** 进入/退出画笔描边模式 */
+outlineBtn.addEventListener('click', () => {
+  if (!rawCanvas) return;
+
+  if (isOutlineMode) {
+    // 退出描边模式
+    isOutlineMode = false;
+    outlinePoints = [];
+    isDrawingOutline = false;
+    processedCanvas = null;
+    goCartoonBtn.style.display = 'none';
+    outlineBtn.textContent = '✏️ 画笔描边';
+    stagingHint.textContent = '📐 选择一种方式提取衣服：裁剪、抠图，或描边';
+    redrawStagingCanvas();
+    return;
+  }
+
+  // 退出其他模式
+  isCropMode = false;
+  cropStart = null;
+  cropEnd = null;
+  hasCropSelection = false;
+  startCropBtn.textContent = '✂️ 裁剪';
+
+  // 进入描边模式
+  isOutlineMode = true;
+  outlinePoints = [];
+  isDrawingOutline = false;
+  processedCanvas = null;
+  goCartoonBtn.style.display = 'none';
+  outlineBtn.textContent = '❌ 取消描边';
+  stagingHint.textContent = '✏️ 在画布上沿着衣服边缘描一圈，松开后自动提取';
+  redrawStagingCanvas();
 });
 
 // ==================== 自动抠图 ====================
@@ -415,9 +536,14 @@ autoBgRemoveBtn.addEventListener('click', () => {
   cropStart = null;
   cropEnd = null;
   startCropBtn.textContent = '✂️ 裁剪';
+  isOutlineMode = false;
+  outlinePoints = [];
+  isDrawingOutline = false;
+  outlineBtn.textContent = '✏️ 画笔描边';
   processedCanvas = autoRemoveBackground(rawCanvas);
   redrawStagingCanvas();
   goCartoonBtn.style.display = 'inline-block';
+  stagingHint.textContent = '✅ 抠图完成！点击「下一步 → 卡通化」';
 });
 
 // ==================== 下一步 → 卡通化 ====================

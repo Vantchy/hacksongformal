@@ -402,3 +402,81 @@ function cropCanvasRegion(sourceCanvas, x, y, w, h) {
   ctx.drawImage(sourceCanvas, x, y, w, h, 0, 0, w, h);
   return canvas;
 }
+
+// ==================== 画笔描边提取（新方案：用户描边） ====================
+
+/**
+ * 根据用户描画的闭合轮廓，提取轮廓内的衣物区域（背景透明）
+ * @param {HTMLCanvasElement} sourceCanvas - 原始图片 canvas
+ * @param {Array<{x: number, y: number}>} points - 描边点数组（用户手绘轨迹）
+ * @param {number} [margin] - 裁剪边距（像素，默认10）
+ * @returns {HTMLCanvasElement} 提取后的衣物 canvas（已裁剪到最小包围盒）
+ */
+function extractByOutline(sourceCanvas, points, margin = 10) {
+  if (!points || points.length < 3) {
+    throw new Error('描边点太少，请画一个完整的闭合轮廓');
+  }
+
+  const w = sourceCanvas.width, h = sourceCanvas.height;
+
+  // 1. 创建全尺寸蒙版 canvas
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = w;
+  maskCanvas.height = h;
+  const maskCtx = maskCanvas.getContext('2d');
+
+  // 黑色背景
+  maskCtx.fillStyle = '#000';
+  maskCtx.fillRect(0, 0, w, h);
+
+  // 绘制闭合路径（白色填充）
+  maskCtx.beginPath();
+  maskCtx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    maskCtx.lineTo(points[i].x, points[i].y);
+  }
+  maskCtx.closePath();
+  maskCtx.fillStyle = '#fff';
+  maskCtx.fill();
+
+  // 2. 将蒙版应用到原始图片
+  const resultCanvas = document.createElement('canvas');
+  resultCanvas.width = w;
+  resultCanvas.height = h;
+  const resultCtx = resultCanvas.getContext('2d');
+
+  // 先绘制原始图片
+  resultCtx.drawImage(sourceCanvas, 0, 0);
+
+  // 获取像素数据
+  const imageData = resultCtx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  const maskData = maskCtx.getImageData(0, 0, w, h).data;
+
+  // 蒙版区域外的像素设为透明
+  for (let i = 0; i < data.length; i += 4) {
+    if (maskData[i] === 0) {
+      // 蒙版黑色 → 透明
+      data[i + 3] = 0;
+    }
+  }
+
+  resultCtx.putImageData(imageData, 0, 0);
+
+  // 3. 计算轨迹包围盒，裁剪到最小范围
+  let minX = w, minY = h, maxX = 0, maxY = 0;
+  for (const p of points) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+
+  // 加边距，边界检查
+  const cropX = Math.max(0, minX - margin);
+  const cropY = Math.max(0, minY - margin);
+  const cropW = Math.min(w - cropX, maxX - minX + margin * 2);
+  const cropH = Math.min(h - cropY, maxY - minY + margin * 2);
+
+  return cropCanvasRegion(resultCanvas, cropX, cropY, cropW, cropH);
+}

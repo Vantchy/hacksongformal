@@ -177,8 +177,10 @@
 | `upload-photo-btn` | `<button>` | 上传图片按钮 |
 | `photo-file-input` | `<input file>` | 文件选择器（隐藏） |
 | `camera-preview` | `<video>` | 摄像头实时预览（隐藏） |
-| `photo-staging-area` | `<div>` | 第一步：暂存区（原始照片 → 裁剪/抠图） |
-| `staging-canvas` | `<canvas>` | 暂存区画布（支持鼠标拖拽裁剪） |
+| `photo-staging-area` | `<div>` | 第一步：暂存区（原始照片 → 裁剪/抠图/描边） |
+| `staging-canvas` | `<canvas>` | 暂存区画布（支持裁剪和描边） |
+| `outline-btn` | `<button>` | 画笔描边模式开关 |
+| `staging-hint` | `<p>` | 暂存区操作提示文字 |
 | `auto-bg-remove-btn` | `<button>` | 自动抠图（方案二） |
 | `start-crop-btn` | `<button>` | 裁剪模式开关（方案一） |
 | `go-cartoon-btn` | `<button>` | 下一步 → 卡通化 |
@@ -274,6 +276,7 @@
 | `removeBackground(canvas, options)` | 成员B | 移除纯色背景（颜色容差法） |
 | `autoRemoveBackground(canvas)` | 成员B | 一键背景移除 |
 | `cropCanvasRegion(canvas, x, y, w, h)` | 成员B | 裁剪 Canvas 指定区域 |
+| `extractByOutline(canvas, points)` | 成员B | 根据画笔描边轮廓提取衣物（蒙版掩码法） |
 
 ### 4.4 交互层（成员B）— 仅内部使用
 
