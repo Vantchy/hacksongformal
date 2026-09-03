@@ -672,6 +672,34 @@ a {
   gap: 10px;
 }
 
+/* ==================== 暂存区（裁剪/抠图） ==================== */
+.staging-hint {
+  font-size: 0.9rem;
+  color: #7b1fa2;
+  margin: 0 0 8px;
+}
+
+.staging-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.staging-actions .btn {
+  font-size: 0.9rem;
+}
+
+#staging-canvas {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  background: #fff;
+  cursor: crosshair;
+}
+
 /* ==================== 页脚 ==================== */
 .footer {
   text-align: center;

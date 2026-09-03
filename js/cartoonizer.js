@@ -279,3 +279,126 @@ function createImageFromDataURL(dataURL) {
   img.src = dataURL;
   return img;
 }
+
+// ==================== 背景移除（方案二：自动抠图） ====================
+
+/** 背景识别与抠图默认参数 */
+const BG_REMOVE_CONFIG = {
+  cornerSampleSize: 5,       // 每个角采样5x5像素
+  tolerance: 40,              // 颜色容差（0~255，越大越激进）
+  edgeBlendRadius: 2         // 边缘羽化半径
+};
+
+/**
+ * 从图片四个角采样，识别背景主色
+ * @param {HTMLCanvasElement} canvas
+ * @returns {{ r: number, g: number, b: number }} 背景主色
+ */
+function getDominantCornerColor(canvas) {
+  const w = canvas.width, h = canvas.height;
+  const ctx = canvas.getContext('2d');
+  const data = ctx.getImageData(0, 0, w, h).data;
+  const s = BG_REMOVE_CONFIG.cornerSampleSize;
+  let totalR = 0, totalG = 0, totalB = 0, count = 0;
+
+  // 采样四个角（左上、右上、左下、右下）
+  const corners = [
+    [0, 0], [w - s, 0],
+    [0, h - s], [w - s, h - s]
+  ];
+
+  for (const [cx, cy] of corners) {
+    for (let y = cy; y < cy + s && y < h; y++) {
+      for (let x = cx; x < cx + s && x < w; x++) {
+        const idx = (y * w + x) * 4;
+        totalR += data[idx];
+        totalG += data[idx + 1];
+        totalB += data[idx + 2];
+        count++;
+      }
+    }
+  }
+
+  return {
+    r: Math.round(totalR / count),
+    g: Math.round(totalG / count),
+    b: Math.round(totalB / count)
+  };
+}
+
+/**
+ * 移除纯色背景（基于颜色容差，纯色背景效果最佳）
+ * @param {HTMLCanvasElement} sourceCanvas - 原始图片 canvas
+ * @param {object} [options] - 可选参数
+ * @param {number} [options.tolerance] - 颜色容差（默认40）
+ * @param {{r,g,b}} [options.bgColor] - 指定背景色（不传则自动从四个角采样）
+ * @returns {HTMLCanvasElement} 背景透明后的 canvas
+ */
+function removeBackground(sourceCanvas, options = {}) {
+  const w = sourceCanvas.width, h = sourceCanvas.height;
+  const tolerance = options.tolerance ?? BG_REMOVE_CONFIG.tolerance;
+  const bgColor = options.bgColor || getDominantCornerColor(sourceCanvas);
+
+  // 创建输出 canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(sourceCanvas, 0, 0);
+
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const dr = data[i] - bgColor.r;
+    const dg = data[i + 1] - bgColor.g;
+    const db = data[i + 2] - bgColor.b;
+    const distance = Math.sqrt(dr * dr + dg * dg + db * db);
+
+    if (distance < tolerance) {
+      // 完全透明（背景）
+      data[i + 3] = 0;
+    } else if (distance < tolerance + BG_REMOVE_CONFIG.edgeBlendRadius * 10) {
+      // 边缘羽化（半透明过渡）
+      const alpha = (distance - tolerance) / (BG_REMOVE_CONFIG.edgeBlendRadius * 10);
+      data[i + 3] = Math.round(255 * Math.min(1, alpha));
+    }
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return canvas;
+}
+
+/**
+ * 一键背景移除：自动识别背景色 + 抠图
+ * @param {HTMLCanvasElement} sourceCanvas
+ * @returns {HTMLCanvasElement}
+ */
+function autoRemoveBackground(sourceCanvas) {
+  return removeBackground(sourceCanvas);
+}
+
+// ==================== 裁剪（方案一：手动框选） ====================
+
+/**
+ * 裁剪 Canvas 指定区域
+ * @param {HTMLCanvasElement} sourceCanvas - 原始 canvas
+ * @param {number} x - 裁剪区域左上角 x
+ * @param {number} y - 裁剪区域左上角 y
+ * @param {number} w - 裁剪宽度
+ * @param {number} h - 裁剪高度
+ * @returns {HTMLCanvasElement} 裁剪后的 canvas
+ */
+function cropCanvasRegion(sourceCanvas, x, y, w, h) {
+  // 边界检查
+  x = Math.max(0, Math.min(x, sourceCanvas.width - 1));
+  y = Math.max(0, Math.min(y, sourceCanvas.height - 1));
+  w = Math.min(w, sourceCanvas.width - x);
+  h = Math.min(h, sourceCanvas.height - y);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(w);
+  canvas.height = Math.round(h);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(sourceCanvas, x, y, w, h, 0, 0, w, h);
+  return canvas;
+}

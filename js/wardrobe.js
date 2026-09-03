@@ -39,13 +39,29 @@ const openCameraBtn = document.getElementById('open-camera-btn');
 const uploadPhotoBtn = document.getElementById('upload-photo-btn');
 const photoFileInput = document.getElementById('photo-file-input');
 const cameraPreview = document.getElementById('camera-preview');
-const photoPreviewArea = document.getElementById('photo-preview-area');
-const photoPreviewCanvas = document.getElementById('photo-preview-canvas');
-const confirmCartoonBtn = document.getElementById('confirm-cartoon-btn');
-const cancelPhotoBtn = document.getElementById('cancel-photo-btn');
 
-// ==================== 摄像头状态 ====================
+// 第一步：暂存区（原始照片 → 裁剪/抠图）
+const stagingArea = document.getElementById('photo-staging-area');
+const stagingCanvas = document.getElementById('staging-canvas');
+const autoBgRemoveBtn = document.getElementById('auto-bg-remove-btn');
+const startCropBtn = document.getElementById('start-crop-btn');
+const goCartoonBtn = document.getElementById('go-cartoon-btn');
+const cancelStagingBtn = document.getElementById('cancel-staging-btn');
+
+// 第二步：卡通化预览区
+const cartoonArea = document.getElementById('photo-cartoon-area');
+const cartoonPreviewCanvas = document.getElementById('photo-preview-canvas');
+const confirmCartoonBtn = document.getElementById('confirm-cartoon-btn');
+const cancelCartoonBtn = document.getElementById('cancel-cartoon-btn');
+
+// ==================== 拍照上传状态 ====================
 let cameraStream = null;
+let rawCanvas = null;        // 原始照片 canvas
+let processedCanvas = null;  // 裁剪/抠图后的 canvas
+let isCropMode = false;      // 是否处于裁剪模式
+let cropStart = null;        // 裁剪起点 {x, y}
+let cropEnd = null;          // 裁剪终点 {x, y}
+let hasCropSelection = false;// 是否已框选
 
 // ==================== 渲染预设样衣 ====================
 function renderPresets() {
@@ -188,7 +204,7 @@ cancelEditBtn.addEventListener('click', () => {
   imgInput.value = '';
   document.querySelectorAll('.preset-item').forEach(el => el.classList.remove('active'));
   closeCamera();
-  hidePhotoPreview();
+  hideAllPhotoPreviews();
 });
 
 // ==================== 拍照上传交互 ====================
@@ -204,27 +220,75 @@ function closeCamera() {
   cameraPreview.style.display = 'none';
 }
 
-/**
- * 隐藏预览区域
- */
-function hidePhotoPreview() {
-  photoPreviewArea.style.display = 'none';
+/** 隐藏所有拍照预览区域 */
+function hideAllPhotoPreviews() {
+  stagingArea.style.display = 'none';
+  cartoonArea.style.display = 'none';
+  isCropMode = false;
+  cropStart = null;
+  cropEnd = null;
+  hasCropSelection = false;
 }
 
-/**
- * 显示卡通化预览
- */
-function showCartoonPreview(canvas) {
-  const ctx = photoPreviewCanvas.getContext('2d');
-  photoPreviewCanvas.width = canvas.width;
-  photoPreviewCanvas.height = canvas.height;
+/** 显示暂存区（原始照片） */
+function showStagingArea(canvas) {
+  rawCanvas = canvas;
+  processedCanvas = null;
+  isCropMode = false;
+  cropStart = null;
+  cropEnd = null;
+  hasCropSelection = false;
+  goCartoonBtn.style.display = 'none';
+  startCropBtn.textContent = '✂️ 裁剪';
+
+  // 绘制原始照片到暂存 canvas
+  const ctx = stagingCanvas.getContext('2d');
+  stagingCanvas.width = canvas.width;
+  stagingCanvas.height = canvas.height;
   ctx.drawImage(canvas, 0, 0);
-  photoPreviewArea.style.display = 'block';
+  stagingArea.style.display = 'block';
 }
 
-/**
- * 打开摄像头
- */
+/** 更新暂存区 canvas 显示 */
+function redrawStagingCanvas() {
+  const ctx = stagingCanvas.getContext('2d');
+  ctx.clearRect(0, 0, stagingCanvas.width, stagingCanvas.height);
+  ctx.drawImage(processedCanvas || rawCanvas, 0, 0);
+
+  // 如果在裁剪模式且有选区，绘制选区框
+  if (isCropMode && cropStart && cropEnd) {
+    const x = Math.min(cropStart.x, cropEnd.x);
+    const y = Math.min(cropStart.y, cropEnd.y);
+    const w = Math.abs(cropEnd.x - cropStart.x);
+    const h = Math.abs(cropEnd.y - cropStart.y);
+
+    // 半透明遮罩（选区外变暗）
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.fillRect(0, 0, stagingCanvas.width, y);
+    ctx.fillRect(0, y, x, h);
+    ctx.fillRect(x + w, y, stagingCanvas.width - x - w, h);
+    ctx.fillRect(0, y + h, stagingCanvas.width, stagingCanvas.height - y - h);
+
+    // 选区边框（白色虚线）
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(x, y, w, h);
+    ctx.setLineDash([]);
+  }
+}
+
+/** 显示卡通化预览区 */
+function showCartoonArea(canvas) {
+  const ctx = cartoonPreviewCanvas.getContext('2d');
+  cartoonPreviewCanvas.width = canvas.width;
+  cartoonPreviewCanvas.height = canvas.height;
+  ctx.drawImage(canvas, 0, 0);
+  stagingArea.style.display = 'none';
+  cartoonArea.style.display = 'block';
+}
+
+// ==================== 拍照上传：打开摄像头 ====================
 openCameraBtn.addEventListener('click', async () => {
   try {
     closeCamera();
@@ -239,17 +303,14 @@ openCameraBtn.addEventListener('click', async () => {
       if (!cameraStream) return;
       const canvas = captureFromCamera(cameraPreview);
       closeCamera();
-      const cartoonCanvas = cartoonizeImage(canvas);
-      showCartoonPreview(cartoonCanvas);
+      showStagingArea(canvas);
     }, 2000);
   } catch (err) {
     alert('无法打开摄像头：' + err.message + '\n请使用上传图片功能');
   }
 });
 
-/**
- * 上传图片
- */
+// ==================== 拍照上传：上传图片 ====================
 uploadPhotoBtn.addEventListener('click', () => {
   photoFileInput.click();
 });
@@ -260,8 +321,7 @@ photoFileInput.addEventListener('change', async (e) => {
 
   try {
     const canvas = await loadImageToCanvas(file);
-    const cartoonCanvas = cartoonizeImage(canvas);
-    showCartoonPreview(cartoonCanvas);
+    showStagingArea(canvas);
   } catch (err) {
     alert('图片处理失败：' + err.message);
   }
@@ -269,26 +329,125 @@ photoFileInput.addEventListener('change', async (e) => {
   photoFileInput.value = '';
 });
 
-/**
- * 确认使用卡通化图片
- */
+// ==================== 裁剪交互 ====================
+
+/** 进入/退出裁剪模式 */
+startCropBtn.addEventListener('click', () => {
+  if (!rawCanvas) return;
+
+  if (isCropMode) {
+    // 退出裁剪模式
+    isCropMode = false;
+    cropStart = null;
+    cropEnd = null;
+    hasCropSelection = false;
+    startCropBtn.textContent = '✂️ 裁剪';
+    processedCanvas = null;
+    goCartoonBtn.style.display = 'none';
+    redrawStagingCanvas();
+    return;
+  }
+
+  // 进入裁剪模式
+  isCropMode = true;
+  cropStart = null;
+  cropEnd = null;
+  hasCropSelection = false;
+  processedCanvas = null;
+  goCartoonBtn.style.display = 'none';
+  startCropBtn.textContent = '❌ 取消裁剪';
+  redrawStagingCanvas();
+});
+
+/** 在暂存 canvas 上拖拽选择区域 */
+stagingCanvas.addEventListener('mousedown', (e) => {
+  if (!isCropMode) return;
+  const rect = stagingCanvas.getBoundingClientRect();
+  const scaleX = stagingCanvas.width / rect.width;
+  const scaleY = stagingCanvas.height / rect.height;
+  cropStart = {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY
+  };
+  cropEnd = { ...cropStart };
+  hasCropSelection = false;
+});
+
+stagingCanvas.addEventListener('mousemove', (e) => {
+  if (!isCropMode || !cropStart) return;
+  const rect = stagingCanvas.getBoundingClientRect();
+  const scaleX = stagingCanvas.width / rect.width;
+  const scaleY = stagingCanvas.height / rect.height;
+  cropEnd = {
+    x: Math.max(0, Math.min(stagingCanvas.width, (e.clientX - rect.left) * scaleX)),
+    y: Math.max(0, Math.min(stagingCanvas.height, (e.clientY - rect.top) * scaleY))
+  };
+  redrawStagingCanvas();
+});
+
+stagingCanvas.addEventListener('mouseup', () => {
+  if (!isCropMode || !cropStart || !cropEnd) return;
+
+  const w = Math.abs(cropEnd.x - cropStart.x);
+  const h = Math.abs(cropEnd.y - cropStart.y);
+
+  if (w < 10 || h < 10) {
+    // 选得太小，忽略
+    cropStart = null;
+    cropEnd = null;
+    redrawStagingCanvas();
+    return;
+  }
+
+  hasCropSelection = true;
+  // 自动应用裁剪
+  const x = Math.min(cropStart.x, cropEnd.x);
+  const y = Math.min(cropStart.y, cropEnd.y);
+  processedCanvas = cropCanvasRegion(rawCanvas, x, y, w, h);
+  redrawStagingCanvas();
+  goCartoonBtn.style.display = 'inline-block';
+});
+
+// ==================== 自动抠图 ====================
+autoBgRemoveBtn.addEventListener('click', () => {
+  if (!rawCanvas) return;
+  isCropMode = false;
+  cropStart = null;
+  cropEnd = null;
+  startCropBtn.textContent = '✂️ 裁剪';
+  processedCanvas = autoRemoveBackground(rawCanvas);
+  redrawStagingCanvas();
+  goCartoonBtn.style.display = 'inline-block';
+});
+
+// ==================== 下一步 → 卡通化 ====================
+goCartoonBtn.addEventListener('click', () => {
+  const source = processedCanvas || rawCanvas;
+  const cartoonCanvas = cartoonizeImage(source);
+  showCartoonArea(cartoonCanvas);
+});
+
+// ==================== 确认使用卡通化图片 ====================
 confirmCartoonBtn.addEventListener('click', () => {
-  const dataURL = photoPreviewCanvas.toDataURL('image/png');
+  const dataURL = cartoonPreviewCanvas.toDataURL('image/png');
   imgInput.value = dataURL;
   nameInput.value = nameInput.value.trim() || '我的衣服';
-  hidePhotoPreview();
+  hideAllPhotoPreviews();
   closeCamera();
 
-  // 清空预设样衣选中状态
   document.querySelectorAll('.preset-item').forEach(el => el.classList.remove('active'));
   alert('✅ 卡通化完成！请填写其他信息后保存');
 });
 
-/**
- * 取消拍照/上传
- */
-cancelPhotoBtn.addEventListener('click', () => {
-  hidePhotoPreview();
+// ==================== 取消暂存区 ====================
+cancelStagingBtn.addEventListener('click', () => {
+  hideAllPhotoPreviews();
+  closeCamera();
+});
+
+// ==================== 取消卡通化预览 ====================
+cancelCartoonBtn.addEventListener('click', () => {
+  hideAllPhotoPreviews();
   closeCamera();
 });
 

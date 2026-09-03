@@ -134,6 +134,9 @@
 | `.photo-preview-container` | 预览内容容器 |
 | `.photo-preview-container canvas` | 预览画布 |
 | `.photo-preview-actions` | 确认/取消按钮组 |
+| `.staging-hint` | 暂存区提示文字 |
+| `.staging-actions` | 暂存区按钮组 |
+| `#staging-canvas` | 暂存画布（十字光标） |
 
 ---
 
@@ -174,10 +177,16 @@
 | `upload-photo-btn` | `<button>` | 上传图片按钮 |
 | `photo-file-input` | `<input file>` | 文件选择器（隐藏） |
 | `camera-preview` | `<video>` | 摄像头实时预览（隐藏） |
-| `photo-preview-area` | `<div>` | 卡通化预览区域 |
-| `photo-preview-canvas` | `<canvas>` | 卡通化结果展示 |
+| `photo-staging-area` | `<div>` | 第一步：暂存区（原始照片 → 裁剪/抠图） |
+| `staging-canvas` | `<canvas>` | 暂存区画布（支持鼠标拖拽裁剪） |
+| `auto-bg-remove-btn` | `<button>` | 自动抠图（方案二） |
+| `start-crop-btn` | `<button>` | 裁剪模式开关（方案一） |
+| `go-cartoon-btn` | `<button>` | 下一步 → 卡通化 |
+| `cancel-staging-btn` | `<button>` | 取消暂存区 |
+| `photo-cartoon-area` | `<div>` | 第二步：卡通化结果预览区 |
+| `photo-preview-canvas` | `<canvas>` | 卡通化结果展示画布 |
 | `confirm-cartoon-btn` | `<button>` | 确认使用卡通化图片 |
-| `cancel-photo-btn` | `<button>` | 取消拍照/上传 |
+| `cancel-cartoon-btn` | `<button>` | 取消卡通化预览 |
 
 ### 3.3 换装页面（dress-up.html）
 
@@ -261,6 +270,10 @@
 | `captureAndCartoonize(file)` | 成员B | 拍照/上传 → 卡通化 → 返回 dataURL（完整流程） |
 | `canvasToDataURL(canvas)` | 成员B | Canvas 转 dataURL |
 | `createImageFromDataURL(dataURL)` | 成员B | dataURL 转图片元素 |
+| `getDominantCornerColor(canvas)` | 成员B | 从四角采样识别背景主色 |
+| `removeBackground(canvas, options)` | 成员B | 移除纯色背景（颜色容差法） |
+| `autoRemoveBackground(canvas)` | 成员B | 一键背景移除 |
+| `cropCanvasRegion(canvas, x, y, w, h)` | 成员B | 裁剪 Canvas 指定区域 |
 
 ### 4.4 交互层（成员B）— 仅内部使用
 

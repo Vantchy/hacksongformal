@@ -119,12 +119,28 @@
             </div>
             <input type="file" id="photo-file-input" accept="image/*" style="display:none">
             <video id="camera-preview" style="display:none" autoplay playsinline></video>
-            <div id="photo-preview-area" class="photo-preview-area" style="display:none">
+
+            <!-- 第一步：原始照片 → 裁剪 / 抠图 -->
+            <div id="photo-staging-area" class="photo-preview-area" style="display:none">
+              <div class="photo-preview-container">
+                <p class="staging-hint">📐 框选衣服区域，或点击「自动抠图」</p>
+                <canvas id="staging-canvas"></canvas>
+                <div class="staging-actions">
+                  <button type="button" class="btn btn-secondary" id="auto-bg-remove-btn">✨ 自动抠图</button>
+                  <button type="button" class="btn btn-secondary" id="start-crop-btn">✂️ 裁剪</button>
+                  <button type="button" class="btn btn-primary" id="go-cartoon-btn" style="display:none">🎨 下一步 → 卡通化</button>
+                  <button type="button" class="btn btn-secondary" id="cancel-staging-btn">❌ 取消</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 第二步：卡通化结果预览 -->
+            <div id="photo-cartoon-area" class="photo-preview-area" style="display:none">
               <div class="photo-preview-container">
                 <canvas id="photo-preview-canvas"></canvas>
                 <div class="photo-preview-actions">
                   <button type="button" class="btn btn-primary" id="confirm-cartoon-btn">✅ 确认使用</button>
-                  <button type="button" class="btn btn-secondary" id="cancel-photo-btn">❌ 取消</button>
+                  <button type="button" class="btn btn-secondary" id="cancel-cartoon-btn">❌ 取消</button>
                 </div>
               </div>
             </div>
